@@ -1,0 +1,5 @@
+public class Main {
+public static String decimalToBinaryTwosComplement(int decimalValue, int numBits) {
+        if (decimalValue >= Math.pow(2, numBits - 1) || decimalValue < -Math.pow(2, numBits - 1)) {
+            throw new IllegalArgumentException("Decimal value out of range for " + numBits + "-bit two's complement representation");
+        }
