@@ -1,0 +1,96 @@
+.model tiny
+.code   
+ORG 0100h
+start:
+
+
+    mov ah, 02h
+    mov dl, '2'
+    int 21h
+    mov dl, 13
+    int 21h
+    mov dl, 10
+    int 21h
+    mov dl, '4'
+    int 21h
+    mov dl, 13
+    int 21h
+    mov dl, 10
+    int 21h
+
+    mov ax, 4C00h
+    int 21h
+
+
+end start
+
+--------------------
+
+=== test1 ===
+2
+4
+---------------------
+{
+    "masmtasm.ASM.emulator": "dosbox-x",
+    "masmtasm.ASM.mode": "workspace",
+    "masmtasm.ASM.actions": {
+
+        "TASM": {
+            "baseBundle": "<built-in>/TASM.jsdos",
+            "before": [
+                "set PATH=C:\\TASM"
+            ],
+            "run": [
+                "TASM ${file}",
+                "TLINK ${filename}",
+                ">V2TEST ${filename}"
+            ],
+            "debug": [
+                "TASM /zi ${file}",
+                "TLINK /v/3 ${filename}.obj",
+                "copy C:\\TASM\\TDC2.TD TDCONFIG.TD",
+                "TD -cTDCONFIG.TD ${filename}.exe"
+            ]
+        },
+        "MASM-v6.11": {
+            "baseBundle": "<built-in>/MASM-v6.11.jsdos",
+            "before": [
+                "set PATH=C:\\MASM"
+            ],
+            "run": [
+                "masm ${file};",
+                "link ${filename};",
+                ">${filename}"
+            ],
+            "debug": [
+                "masm ${file};",
+                "link ${filename}.OBJ;",
+                ">debug ${filename}.exe"
+            ]
+        },
+        "MASM-v5.00": {
+            "baseBundle": "<built-in>/MASM-v5.00.jsdos",
+            "before": [
+                "set PATH=C:\\MASM"
+            ],
+            "run": [
+                "masm ${file};",
+                "link ${filename};",
+                ">${filename}"
+            ],
+            "debug": [
+                "masm ${file};",
+                "link ${filename}.OBJ;",
+                ">debug ${filename}.exe"
+            ],
+            "support": [
+                "jsdos",
+                "dosbox",
+                "dosbox-x",
+                "msdos player"
+            ]
+        }
+    }
+}
+
+
