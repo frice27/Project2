@@ -1,93 +1,111 @@
 # Project2
 
-import java.util.*;
 
-public class Main {
-    public static void main(String[] args) {
-        Scanner scanner = new Scanner(System.in);
+ section .data
+    input_buffer db 255 dup(0)
+    num_buffer db 20 dup(0)   ; буфер для збереження числа
+    lf_cr db 0Dh, 0Ah, '$'    ; символи нового рядка
+    prompt db 'Введіть десяткове число (EOF щоб завершити): ', 0
+    max_word dw 32767         ; максимальне 16-бітне число
 
-        List<Integer> numbers = new ArrayList<>();
+section .text
+    global _start
 
-        while (scanner.hasNext()) {
-            String line = scanner.nextLine();
-            String[] tokens = line.split("\\s+");
+_start:
+    ; Виведення промпта
+    mov eax, 4                  ; syscall для write
+    mov ebx, 1                  ; stdout
+    mov ecx, prompt             ; вказівник на промпт
+    mov edx, prompt_len         ; довжина промпта
+    int 80h                     ; виклик системного виклику
 
-            for (String token : tokens) {
-                try {
-                    int num = Integer.parseInt(token);
-                    numbers.add(num);
-                } catch (NumberFormatException e) {
-                    
-                }
-            }
-        }
+read_loop:
+    ; Зчитування введення з stdin
+    mov eax, 3                  ; syscall для read
+    mov ebx, 0                  ; stdin
+    mov ecx, input_buffer       ; вказівник на буфер введення
+    mov edx, 255                ; максимальна довжина введення
+    int 80h                     ; виклик системного виклику
 
-      
-        List<String> binaryNumbers = new ArrayList<>();
-        for (int num : numbers) {
-            binaryNumbers.add(decimalToBinary(num));
-        }
+    ; Перевірка на EOF
+    cmp eax, 0                  ; перевірка на кількість прочитаних байтів
+    je exit_program             ; якщо 0, то кінець програми
 
-       
-        mergeSort(binaryNumbers);
+    ; Розділення введення на числа та їх обробка
+    mov esi, input_buffer      ; вказівник на початок введення
+read_number_loop:
+    mov edi, num_buffer        ; вказівник на буфер для числа
+    call read_number           ; читаємо число
 
-        double median;
-        if (binaryNumbers.size() % 2 == 0) {
-            median = (binaryToDecimal(binaryNumbers.get(binaryNumbers.size() / 2)) +
-                    binaryToDecimal(binaryNumbers.get(binaryNumbers.size() / 2 - 1))) / 2.0;
-        } else {
-            median = binaryToDecimal(binaryNumbers.get(binaryNumbers.size() / 2));
-        }
+    ; Перевірка, чи число від'ємне
+    mov al, byte [esi]
+    cmp al, '-'                ; перевірка на від'ємний знак
+    jne positive_number        ; якщо не від'ємне, переходимо до наступного числа
+    inc esi                    ; пропускаємо мінус
 
-        double average = 0;
-        for (String binaryNum : binaryNumbers) {
-            average += binaryToDecimal(binaryNum);
-        }
-        average /= binaryNumbers.size();
+    ; Конвертуємо від'ємне число в доповнювальний код
+    call convert_negative
 
-        System.out.println("Медіана: " + median);
-        System.out.println("Середнє значення: " + average);
-    }
+positive_number:
+    ; Конвертуємо число в бінарне представлення
+    call convert_to_binary
 
-    private static String decimalToBinary(int num) {
-        return Integer.toBinaryString(num & 0xFFFF); 
-    }
+    ; Виведення бінарного представлення числа
+    mov eax, 4                  ; syscall для write
+    mov ebx, 1                  ; stdout
+    mov ecx, num_buffer         ; вказівник на буфер з бінарним представленням
+    call print_string           ; виводимо бінарне представлення числа
 
-    private static int binaryToDecimal(String binary) {
-        return Integer.parseInt(binary, 2);
-    }
+    ; Виведення нового рядка
+    mov eax, 4                  ; syscall для write
+    mov ebx, 1                  ; stdout
+    mov ecx, lf_cr              ; вказівник на символи нового рядка
+    call print_string           ; виводимо новий рядок
 
-    private static void mergeSort(List<String> arr) {
-        if (arr.size() < 2) {
-            return;
-        }
+    ; Перехід до наступного числа
+    inc esi                     ; пропускаємо пробіл або символ нового рядка
+    jmp read_number_loop
 
-        int mid = arr.size() / 2;
-        List<String> left = new ArrayList<>(arr.subList(0, mid));
-        List<String> right = new ArrayList<>(arr.subList(mid, arr.size()));
+exit_program:
+    ; Завершення програми
+    mov eax, 1                  ; syscall для exit
+    xor ebx, ebx                ; код завершення 0
+    int 80h                     ; виклик системного виклику
 
-        mergeSort(left);
-        mergeSort(right);
-        merge(left, right, arr);
-    }
+read_number:
+    ; Читання числа з введення
+    movzx ecx, byte [esi]      ; зчитування символу
+    cmp ecx, ' '               ; перевірка на пробіл
+    je end_of_number           ; якщо пробіл, кінець числа
 
-    private static void merge(List<String> left, List<String> right, List<String> arr) {
-        int leftIndex = 0, rightIndex = 0, arrIndex = 0;
+    cmp ecx, 0Ah               ; перевірка на LF (0x0A)
+    je end_of_number           ; якщо LF, кінець числа
 
-        while (leftIndex < left.size() && rightIndex < right.size()) {
-            if (left.get(leftIndex).compareTo(right.get(rightIndex)) <= 0) {
-                arr.set(arrIndex++, left.get(leftIndex++));
-            } else {
-                arr.set(arrIndex++, right.get(rightIndex++));
-            }
-        }
+    cmp ecx, 0Dh               ; перевірка на CR (0x0D)
+    je end_of_number           ; якщо CR, кінець числа
 
-        while (leftIndex < left.size()) {
-            arr.set(arrIndex++, left.get(leftIndex++));
-        }
+    mov byte [edi], cl         ; копіювання символу в буфер числа
+    inc edi                    ; перехід до наступного байта в буфері
+    inc esi                    ; перехід до наступного символу в введенні
+    jmp read_number            ; повторення процесу для наступного символу
 
-        while (rightIndex < right.size()) {
-            arr.set(arrIndex++, right.get(rightIndex++));
-        }
-    }
-}
+end_of_number:
+    mov byte [edi], 0          ; додаємо нуль-термінатор до буфера числа
+    ret
+
+convert_to_binary:
+    ; Конвертуємо число в бінарне представлення
+    mov eax, num_buffer        ; вказівник на буфер з числом
+    call atoi                  ; перетворення рядка у ціле число
+    mov ebx, eax               ; зберігаємо число у регістрі EBX
+
+    ; Перевірка на переповнення
+    cmp ebx, max_word          ; порівняння з максимально можливим значенням
+    jle not_overflow           ; якщо число менше або дорівнює максимально можливому, не переповнено
+
+    mov ebx, max_word          ; встановлення максимального значення за модулем
+    neg ebx                    ; встановлення від'ємного значення
+not_overflow:
+    movzx eax, bx              ; розширення до 32 біт
+    call itoa                  ; перетворення цілого числа у рядок
+
