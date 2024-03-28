@@ -6,6 +6,7 @@ section .bss
     input resb 20       ; Буфер для перетворення символів на число
     nums resw 10000     ; Масив для збереження чисел
     num_count resw 1    ; Лічильник чисел
+    output db 20 dup(0) ; Буфер для виведення результату
 
 section .text
     global _start
@@ -117,6 +118,16 @@ print_integer:
     mov di, output     ; Буфер для збереження рядка
     add di, 19         ; Початок з кінця буфера
 
+    ; Перевірка на від'ємне число
+    test ax, ax
+    jns nonnegative
+
+    ; Додаємо знак мінус до виводу
+    mov byte [di], '-'
+    inc di
+    neg ax            ; Змінюємо знак числа на додатній
+
+nonnegative:
     ; Обробка числа 0 окремо
     cmp ax, 0
     jne nonzero
@@ -146,18 +157,30 @@ print_done:
 string_to_int:
     ; Конвертація рядка у число
     xor ax, ax         ; Очистка ax для збереження результату
+    xor cx, cx         ; Очистка cx для збереження знака числа
+
 next_digit:
     mov dl, byte [si]  ; Завантаження наступного символу
     test dl, dl        ; Перевірка на кінець рядка
     jz end_convert
+    cmp dl, '-'        ; Перевірка, чи є символ знаком мінус
+    je set_negative    ; Якщо так, встановлюємо флаг негативного числа
     sub dl, '0'        ; Конвертація символу у цифру
     mul bx             ; Множення поточного числа на 10
     add ax, dx         ; Додавання цифри до результату
     inc si             ; Перехід до наступного символу
     jmp next_digit
 
+set_negative:
+    inc si             ; Пропускаємо символ мінуса
+    mov cx, 1          ; Встановлюємо флаг негативного числа
+    jmp next_digit
+
 end_convert:
+    test cx, cx        ; Перевірка на від'ємне число
+    jnz make_negative  ; Якщо так, змінюємо знак числа на від'ємний
     ret
 
-section .data
-    output db 20 dup(0)
+make_negative:
+    neg ax             ; Змінюємо знак числа на від'ємний
+    ret
