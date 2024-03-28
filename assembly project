@@ -1,107 +1,163 @@
 section .data
-    input_buffer db 255 dup(0)
-    num_buffer db 20 dup(0)   ; буфер для збереження числа
-    lf_cr db 0Dh, 0Ah, '$'    ; символи нового рядка
-    prompt db 'Введіть десяткове число (EOF щоб завершити): ', 0
-    max_word dw 32767         ; максимальне 16-бітне число
+    msg db 'Enter decimal numbers (separated by space or newline, max length 255): $'
+
+section .bss
+    buffer resb 256     ; Буфер для збереження введеного рядка
+    input resb 20       ; Буфер для перетворення символів на число
+    nums resw 10000     ; Масив для збереження чисел
+    num_count resw 1    ; Лічильник чисел
 
 section .text
     global _start
 
 _start:
-    ; Виведення промпта
-    mov eax, 4                  ; syscall для write
-    mov ebx, 1                  ; stdout
-    mov ecx, prompt             ; вказівник на promt
-    mov edx, prompt_len         ; довжина промпта
-    int 80h                     ; системний виклик
+    ; Вивід повідомлення
+    mov ah, 09h         ; Функція DOS для виведення рядка
+    mov dx, msg         ; Передача адреси рядка
+    int 21h             ; Виклик інтерупта DOS
 
 read_loop:
-    ; Зчитування введення з stdin
-    mov eax, 3                  ; syscall для read
-    mov ebx, 0                  ; stdin
-    mov ecx, input_buffer       ; вказівник на буфер введення
-    mov edx, 255                ; максимальна довжина введення
-    int 80h                     ; виклик системного виклику
+    ; Читання рядка з stdin
+    mov ah, 0Ah         ; Функція DOS для читання рядка
+    mov dx, buffer      ; Передача адреси буфера
+    int 21h             ; Виклик інтерупта DOS
 
-    ; Перевірка на EOF
-    cmp eax, 0                  ; кількість прочитаних байтів
-    je exit_program             ; кінець програми при умові якщо 0
+    ; Перевірка на кінець вводу
+    cmp byte [buffer], 0Dh  ; Перевірка першого символу на CR
+    je end_program
 
-    ; Розділення введення на числа та їх обробка
-    mov esi, input_buffer      ; вказівник на початок введення
-read_number_loop:
-    mov edi, num_buffer        ; вказівник на буфер для числа
-    call read_number           ; читаємо число
+    ; Розділення рядка на числа та їх збереження
+    mov si, buffer     ; Передача адреси буфера
+    call tokenize_and_store
 
-    ; Перевірка, чи число від'ємне
-    mov al, byte [esi]
-    cmp al, '-'                ; перевірка на від'ємний знак
-    jne positive_number        ; якщо не від'ємне, переходимо до наступного числа
-    inc esi                    ; пропускаємо мінус
+    ; Повторення
+    jmp read_loop
 
-    ; Конвертуємо від'ємне число в доповнювальний код
-    call convert_negative
+end_program:
+    ; Вивід збережених чисел
+    mov si, nums       ; Передача адреси масиву
+    mov cx, [num_count] ; Передача кількості чисел
+    call print_numbers
 
-positive_number:
-    ; Конвертуємо число в бінарне представлення
-    call convert_to_binary
+    ; Вихід
+    mov ax, 4C00h      ; Функція DOS для виходу з програми
+    int 21h            ; Виклик інтерупта DOS
 
-    ; Виведення бінарного представлення числа
-    mov eax, 4                  ; syscall для write
-    mov ebx, 1                  ; stdout
-    mov ecx, num_buffer         ; вказівник на буфер з бінарним представленням
-    call print_string           ; виводимо бінарне представлення числа
+tokenize_and_store:
+    ; Цикл для обробки кожного символу в рядку
+    xor bx, bx         ; Лічильник символів в рядку
+    xor di, di         ; Вказівник на початок рядка
 
-    ; Виведення нового рядка
-    mov eax, 4                  ; syscall для write
-    mov ebx, 1                  ; stdout
-    mov ecx, lf_cr              ; вказівник на символи нового рядка
-    call print_string           ; виводимо новий рядок
+next_char:
+    ; Читання наступного символу
+    mov al, byte [si]  ; Завантаження символу в AL
+    test al, al        ; Перевірка на кінець рядка
+    jz end_of_line
 
-    ; Перехід до наступного числа
-    inc esi                     ; пропускаємо пробіл або символ нового рядка
-    jmp read_number_loop
+    ; Перевірка на пробіл або символ нового рядка
+    cmp al, ' '
+    je process_number
+    cmp al, 0Ah
+    je process_number
+    cmp al, 0Dh
+    je process_number
 
-exit_program:
-    ; Завершення програми
-    mov eax, 1                  ; syscall для exit
-    xor ebx, ebx                ; код завершення 0
-    int 80h                     ; виклик системного виклику
-
-read_number:
-    ; Читання числа з введення
-    movzx ecx, byte [esi]      ; зчитування символу
-    cmp ecx, ' '               ; перевірка на пробіл
-    je end_of_number           ; якщо пробіл, кінець числа
-
-    cmp ecx, 0Ah               ; перевірка на LF (0x0A)
-    je end_of_number           ; якщо LF, кінець числа
-
-    cmp ecx, 0Dh               ; перевірка на CR (0x0D)
-    je end_of_number           ; якщо CR, кінець числа
-
-    mov byte [edi], cl         ; копіювання символу в буфер числа
-    inc edi                    ; перехід до наступного байта в буфері
-    inc esi                    ; перехід до наступного символу в введенні
-    jmp read_number            ; повторення процесу для наступного символу
-
-end_of_number:
-    mov byte [edi], 0          ; додаємо нуль-термінатор до буфера числа
+    ; Якщо це не пробіл або символ нового рядка, перейти до наступного символу
+    inc si
+    inc bx
+    cmp bx, 255
+    jnz next_char
     ret
 
-convert_to_binary:
-    ; Конвертуємо число в бінарне представлення
-    mov eax, num_buffer        ; вказівник на буфер з числом
-    call atoi                  ; перетворення рядка у ціле число
-    mov ebx, eax               ; зберігаємо число у регістрі EBX
+process_number:
+    ; Перевірка наявності числа для обробки
+    cmp bx, 0
+    je next_char
 
-    ; Перевірка на переповнення
-    cmp ebx, max_word          ; порівняння з максимально можливим значенням
-    jle not_overflow           ; якщо число менше або дорівнює максимально можливому, не переповнено
+    ; Копіювання числа в окремий буфер
+    mov cx, bx
+    mov si, buffer
+    mov di, input
+    rep movsb
 
-    mov ebx, max_word          ; встановлення максимального значення за модулем
-    neg ebx                    ; встановлення від'ємного значення
-not_overflow:
-    movzx eax, bx              ; розширення до 32 біт
-    call itoa                  ; перетворення цілого числа у рядок
+    ; Конвертація рядка у число
+    mov si, input
+    call string_to_int
+
+    ; Збереження числа в масиві
+    mov bx, [num_count]
+    mov ax, nums[bx]
+    mov [ax], si
+    inc word [num_count]
+
+    ; Перехід до наступного символу
+    inc si
+    xor bx, bx
+    jmp next_char
+
+end_of_line:
+    ret
+
+print_numbers:
+    ; Виведення кожного числа у масиві
+    mov di, si         ; Збереження початкової адреси масиву
+    mov bx, cx         ; Збереження кількості чисел
+print_loop:
+    mov si, di         ; Передача адреси поточного числа
+    mov ax, [si]
+    call print_integer  ; Виведення числа
+    add di, 2          ; Перехід до наступного числа
+    dec bx             ; Зменшення лічильника
+    jnz print_loop     ; Повторення, поки всі числа не будуть виведені
+    ret
+
+print_integer:
+    ; Конвертація числа у рядок та виведення його
+    mov bx, 10         ; Для ділення на 10
+    mov di, output     ; Буфер для збереження рядка
+    add di, 19         ; Початок з кінця буфера
+
+    ; Обробка числа 0 окремо
+    cmp ax, 0
+    jne nonzero
+
+    mov byte [di], '0'
+    inc di
+    jmp print_done
+
+nonzero:
+    ; Конвертація числа в рядок у зворотньому порядку
+reverse_loop:
+    xor dx, dx        ; Очистка dx для ділення
+    div bx            ; Ділення на 10, результат у ax, остача в dx
+    add dl, '0'       ; Конвертація остачі у символ
+    dec di
+    mov [di], dl      ; Збереження символу в буфері
+    test ax, ax       ; Перевірка, чи закінчилося число
+    jnz reverse_loop  ; Якщо ні, продовження обробки
+
+print_done:
+    ; Виведення рядка
+    mov ah, 09h        ; Функція DOS для виведення рядка
+    mov dx, di         ; Передача адреси рядка
+    int 21h            ; Виклик інтерупта DOS
+    ret
+
+string_to_int:
+    ; Конвертація рядка у число
+    xor ax, ax         ; Очистка ax для збереження результату
+next_digit:
+    mov dl, byte [si]  ; Завантаження наступного символу
+    test dl, dl        ; Перевірка на кінець рядка
+    jz end_convert
+    sub dl, '0'        ; Конвертація символу у цифру
+    mul bx             ; Множення поточного числа на 10
+    add ax, dx         ; Додавання цифри до результату
+    inc si             ; Перехід до наступного символу
+    jmp next_digit
+
+end_convert:
+    ret
+
+section .data
+    output db 20 dup(0)
