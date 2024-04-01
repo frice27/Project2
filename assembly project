@@ -1,1 +1,14 @@
-
+.model small
+.stack 10000d
+.386
+.data
+    oneChar db ?, '$'
+    numbers dw 20000 Dup(?)
+    minusChar dd ?
+    lengthArr dw ?
+    innerLooCn dw ?
+    outerLoopCnt dw ?
+    
+    
+.code
+start:
