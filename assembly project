@@ -59,6 +59,69 @@ cmp oneChar, 10
                 jmp read_next
             
             converChar:
+mov ax, numbers[di]
+
+                mov cl, oneChar
+                
+                sub cl, '0'
+                mov bx, 10
+                mul bx
+                jo ifOverFlow
+                add ax, cx
+                jo ifOverFlow
+
+                cmp ax, 32767
+                ja ifOverFlow
+
+            next:
+                mov si, '1'
+                mov numbers[di], ax
+                jmp read_next
+                
+            putNum:
+                cmp si, '1'
+                jnz jump
+
+                cmp minusChar, '-'
+                jne nextNum
+
+                cmp numbers[di], 32767
+                je minusMax
+                jmp negMinusEv
+
+                minusMax:
+                    neg numbers[di]
+                    sub numbers[di], 1
+                    jmp nextNum
+
+                negMinusEv:
+                    neg numbers[di]
+
+                nextNum:
+                    mov minusChar, '+'
+                    add di, 2
+                    mov numbers[di], 0
+
+                jump:
+                    mov si, '0'
+                    jmp read_next
+
+            ifOverFlow:
+                mov numbers[di], 32767
+                jo read_next
+
+        stop:
+            cmp si, '1' 
+            jnz getSizeArr
+            
+            add di, 2
+
+            getSizeArr:
+                shr di, 1
+                mov lengthArr, di
+
+        ret
+    readNumbers ENDP
 
  println PROC
         mov ah, 02h
