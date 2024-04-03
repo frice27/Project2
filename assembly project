@@ -12,6 +12,11 @@
     
 .code
 start:
+mov ax, @data
+mov ds, ax
+
+call println
+
 
  println PROC
         mov ah, 02h
