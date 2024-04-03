@@ -26,7 +26,7 @@ int 21h
         mov numbers[0], 0
         mov minusChar, '+'
 read next:
-   mov ah, 2Fh
+   mov ah, 3Fh
             mov bx, 0h 
             mov cx, 1  
             mov dx, offset oneChar  
@@ -40,6 +40,25 @@ read next:
 
           cmp oneChar, 13
           je putNum
+cmp oneChar, 10
+            je putNum
+
+            cmp oneChar, '-'
+            je charIsMinus
+
+            cmp oneChar, '0'
+            jb next
+
+            cmp oneChar, '9'
+            ja next
+
+            jmp converChar
+
+            charIsMinus:
+                mov minusChar, '-'
+                jmp read_next
+            
+            converChar:
 
  println PROC
         mov ah, 02h
