@@ -35,6 +35,11 @@ read next:
             or ax, ax
             je stop
 
+            cmp oneChar, ' '
+            jz putNum
+
+          cmp oneChar, 13
+          je putNum
 
  println PROC
         mov ah, 02h
