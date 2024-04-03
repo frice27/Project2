@@ -12,3 +12,14 @@
     
 .code
 start:
+
+ println PROC
+        mov ah, 02h
+        mov dl, 10
+        int 21h
+
+        xor ax, ax
+        xor dx, dx
+
+        ret
+    println ENDP
