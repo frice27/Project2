@@ -26,7 +26,14 @@ int 21h
         mov numbers[0], 0
         mov minusChar, '+'
 read next:
+   mov ah, 2Fh
+            mov bx, 0h 
+            mov cx, 1  
+            mov dx, offset oneChar  
+            int 21h   
 
+            or ax, ax
+            je stop
 
 
  println PROC
