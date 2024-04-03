@@ -133,3 +133,12 @@ mov ax, numbers[di]
 
         ret
     println ENDP
+
+
+drawSpace PROC
+        mov ah, 02h
+        mov dl, 0dh
+        int 21h
+
+        ret
+    drawSpace ENDP
