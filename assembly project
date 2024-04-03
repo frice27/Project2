@@ -14,8 +14,19 @@
 start:
 mov ax, @data
 mov ds, ax
-
+call readNumbers
 call println
+
+mov, ax 4C00h
+int 21h
+
+ readNumbers PROC
+        xor di, di
+        xor si, si
+        mov numbers[0], 0
+        mov minusChar, '+'
+read next:
+
 
 
  println PROC
