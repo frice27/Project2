@@ -176,6 +176,46 @@ SearchAvarage proc
             ret
     SearchAvarage ENDP
 
+    BubbleSort proc
+        mov cx, lengthArr
+        sub cx, 1
+        shl cx, 1
+        mov innerLooCn, cx
+        
+        shr cx, 1
+        add cx, 1
+        mov outerLoopCnt, cx
+        xor di, di
+
+        xor cx, cx
+        outerLoop:
+            xor si, si
+        innerLoop:
+            mov ax, numbers[si]
+
+            cmp ax, numbers[si + 2]
+            jg incIndex
+            
+            xchg numbers[si + 2], ax
+            mov numbers[si], ax
+
+            mov cx, 1
+
+        incIndex:
+            add si, 2
+            cmp si, innerLooCn
+            jb innerLoop
+
+            cmp cx, 1
+            jne stopLoops
+            add di, 1
+            cmp di, outerLoopCnt
+            jb outerLoop
+
+        stopLoops :
+            ret
+    BubbleSort ENDP
+
  println PROC
         mov ah, 02h
         mov dl, 10
