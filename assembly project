@@ -123,6 +123,15 @@ mov ax, numbers[di]
         ret
     readNumbers ENDP
 
+SearchAvarage proc
+        xor di, di
+        xor eax, eax
+        xor ebx, ebx
+        mov si, word ptr lengthArr
+
+        addNumbers:
+            mov bx, numbers[di]
+
  println PROC
         mov ah, 02h
         mov dl, 10
