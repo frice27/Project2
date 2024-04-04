@@ -131,6 +131,21 @@ SearchAvarage proc
 
         addNumbers:
             mov bx, numbers[di]
+    cmp bx, 0
+            jl negati
+
+            add eax, ebx
+            jmp mainCount
+
+            negati:
+                neg bx
+                sub eax, ebx
+
+            mainCount:
+                add di, 2
+                dec si
+                cmp si, 0
+                ja addNumbers
 
  println PROC
         mov ah, 02h
