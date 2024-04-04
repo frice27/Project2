@@ -235,3 +235,38 @@ drawSpace PROC
 
         ret
     drawSpace ENDP
+SearchMiddle PROC
+        mov bx, 2
+        mov di, lengthArr
+        mov ax, lengthArr
+        div bx
+
+        shr di, 1
+        shl di, 1
+
+        cmp dx, 0
+        je isDivOnTwo
+        jmp isNotDivOnTwo
+        
+        
+        isNotDivOnTwo:
+            mov ax, numbers[di]
+            xor di, di
+
+            call outputNum
+
+            ret
+
+        isDivOnTwo:
+            xor dx, dx
+            mov ax, numbers[di - 2]
+            add ax, numbers[di]
+            shr ax, 1
+
+            xor di, di
+            call outputNum
+
+            ret
+    SearchMiddle ENDP
+
+end start
