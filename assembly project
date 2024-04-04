@@ -146,6 +146,35 @@ SearchAvarage proc
                 dec si
                 cmp si, 0
                 ja addNumbers
+           divOnSize:
+            cmp eax, 0
+            jl negat
+            jmp elses
+
+            negat:
+                neg eax
+                
+                xor edx, edx
+                xor ecx, ecx
+                mov cx, lengthArr
+                div ecx
+
+                neg eax
+
+            call outputNum
+            ret
+
+            elses:
+                xor edx, edx
+                xor ecx, ecx
+                mov cx, lengthArr
+                div ecx
+
+            write:
+                call outputNum
+
+            ret
+    SearchAvarage ENDP
 
  println PROC
         mov ah, 02h
