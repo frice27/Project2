@@ -1,0 +1,299 @@
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+
+// Клас, який надає методи для введення даних з консолі
+public final class DataInput {
+    public DataInput() {
+    }
+
+    // Метод для отримання Long з консолі
+    public static Long getLong() {
+        String s = getString(); // Отримуємо рядок з консолі
+        try {
+            return Long.valueOf(s); // Перетворюємо рядок у Long
+        } catch (NumberFormatException var2) { // Обробляємо помилку перетворення
+            System.out.println("Invalid input. Please restart and enter a valid Long value."); // Виводимо повідомлення про помилку
+            return null;
+        }
+    }
+
+    // Метод для отримання символу з консолі
+    public static char getChar() {
+        String s = getString(); // Отримуємо рядок з консолі
+        if (s.length() == 0) { // Перевіряємо, чи рядок не порожній
+            System.out.println("Empty input. Please restart and enter a character."); // Виводимо повідомлення про порожній ввід
+            return '\u0000';
+        } else {
+            return s.charAt(0); // Повертаємо перший символ рядка
+        }
+    }
+
+    // Метод для отримання Double з консолі
+    public static Double getDouble() {
+        int program = 1; // Індикатор програми для обробки помилок
+        while (program == 1) { // Виконуємо, поки не буде введено коректне значення
+            String s = getString(); // Отримуємо рядок з консолі
+            try {
+                Double result = Double.valueOf(s); // Перетворюємо рядок у Double
+                program = 0; // Змінюємо індикатор програми
+                return result; // Повертаємо результат
+            } catch (NumberFormatException var2) { // Обробляємо помилку перетворення
+                System.out.println("Invalid input. Please enter a valid double value."); // Виводимо повідомлення про помилку
+                program = 1; // Змінюємо індикатор програми для повторного введення
+            }
+        }
+        return null;
+    }
+
+    // Метод для отримання Integer з консолі
+    public static Integer getInt() {
+        int program = 1; // Індикатор програми для обробки помилок
+        while (program == 1) { // Виконуємо, поки не буде введено коректне значення
+            String s = getString(); // Отримуємо рядок з консолі
+            try {
+                Integer result = Integer.valueOf(s); // Перетворюємо рядок у Integer
+                program = 0; // Змінюємо індикатор програми
+                return result; // Повертаємо результат
+            } catch (NumberFormatException var2) { // Обробляємо помилку перетворення
+                System.out.println("Invalid input. Please enter a valid integer value."); // Виводимо повідомлення про помилку
+                program = 1; // Змінюємо індикатор програми для повторного введення
+            }
+        }
+        return null;
+    }
+
+    // Метод для отримання рядка з консолі
+    public static String getString() {
+        String s = "";
+        try {
+            InputStreamReader isr = new InputStreamReader(System.in); // Створюємо об'єкт для зчитування символів з консолі
+            BufferedReader br = new BufferedReader(isr); // Створюємо об'єкт для зчитування рядків з консолі
+            s = br.readLine(); // Зчитуємо рядок з консолі
+        } catch (IOException var3) { // Обробляємо помилку зчитування
+            System.out.println("Error reading input. Please try again."); // Виводимо повідомлення про помилку
+        }
+        return s; // Повертаємо рядок
+    }
+}
+
+// Головний клас програми
+public class Main {
+    public static void main(String[] args) {
+        // Виводимо повідомлення про введення чисел
+        System.out.println("Enter numbers: ");
+        // Отримуємо рядок з консолі
+        String input = DataInput.getString();
+
+        // Розділяємо рядок на окремі слова
+        String[] words = input.split(" ");
+        // Повторюємо, поки не буде введено хоча б одне слово
+        while (words.length == 0) {
+            System.out.println("Enter numbers: "); // Виводимо повідомлення про введення чисел
+            input = DataInput.getString(); // Отримуємо рядок з консолі
+        }
+
+        // Виводимо масив з введеними словами
+        System.out.println("Array created with the following words:");
+        for (String word : words) {
+            System.out.println(word);
+        }
+
+        // Конвертуємо слова в цілі числа
+        int[] integers = convertWordsToIntegers(words);
+
+        // Виводимо цілі числа, отримані з слів
+        System.out.println("Integers converted from words:");
+        for (int num : integers) {
+            System.out.println(num);
+        }
+
+        // Виводимо двійкове представлення чисел у доповненні до двох
+        System.out.println("Binary representation of numbers in two's complement:");
+        String[] binaryArray = toTwosComplementArray(integers);
+        for (int num : integers) {
+            String twosComplement = toTwosComplement(num);
+            System.out.println(num + " : " + twosComplement);
+        }
+
+        // Сортуємо масив двійкових представлень
+        System.out.println("Sorted array: ");
+        String[] sortedBinaries = bubbleSort(binaryArray);
+        for (String sortedWord : sortedBinaries) {
+            System.out.println(sortedWord);
+        }
+
+        // Розраховуємо медіану та виводимо її у десятковому представленні
+        String median = calculateMedian(binaryArray);
+        System.out.println("Median: " + binaryToDecimal(median));
+
+        // Розраховуємо середнє арифметичне та виводимо його
+        String mean = calculateMean(binaryArray);
+        System.out.println("Mean: " + mean);
+    }
+
+    // Метод для розрахунку медіани
+    public static String calculateMedian(String[] binaryArray) {
+        int length = binaryArray.length;
+        String[] sortedBinaries = bubbleSort(binaryArray); // Сортуємо масив
+
+        if (length % 2 == 0) { // Якщо кількість елементів парна
+            // Обчислюємо середнє значення двох середніх елементів
+            String firstMiddle = sortedBinaries[length / 2 - 1];
+            String secondMiddle = sortedBinaries[length / 2];
+            return calculateMean(new String[]{firstMiddle, secondMiddle});
+        } else { // Якщо кількість елементів непарна
+            return sortedBinaries[length / 2]; // Повертаємо серединний елемент
+        }
+    }
+
+    // Метод для розрахунку середнього арифметичного
+    public static String calculateMean(String[] binaryArray) {
+        int sum = 0;
+        for (String binary : binaryArray) {
+            sum = addBinary(sum, binaryToInteger(binary)); // Додаємо числа у двійковому представленні
+        }
+
+        double mean = (double) sum / binaryArray.length; // Обчислюємо середнє арифметичне
+
+        return Double.toString(mean); // Повертаємо результат у рядковому представленні
+    }
+
+    // Метод для перетворення двійкового рядка у ціле число
+    public static int binaryToInteger(String binary) {
+        int result = 0;
+        for (int i = 0; i < binary.length(); i++) {
+            if (binary.charAt(i) == '1') {
+                result += Math.pow(2, binary.length() - 1 - i);
+            }
+        }
+        return result;
+    }
+
+    // Метод для додавання двох чисел у двійковому представленні
+    public static int addBinary(int a, int b) {
+        while (b != 0) {
+            int carry = a & b;
+            a = a ^ b;
+            b = carry << 1;
+        }
+        return a;
+    }
+
+    // Метод для перетворення двійкового рядка у десяткове число
+    public static int binaryToDecimal(String binary) {
+        int decimal = 0;
+        for (int i = 0; i < binary.length(); i++) {
+            if (binary.charAt(i) == '1') {
+                decimal += Math.pow(2, binary.length() - 1 - i);
+            }
+        }
+        return decimal;
+    }
+
+    // Метод для сортування масиву рядків
+    public static String[] bubbleSort(String[] arr) {
+        String[] sortedArray = arr.clone();
+
+        int n = sortedArray.length;
+        boolean swapped;
+        do {
+            swapped = false;
+            for (int i = 1; i < n; i++) {
+                if (compareBinaryStrings(sortedArray[i - 1], sortedArray[i]) > 0) {
+                    String temp = sortedArray[i - 1];
+                    sortedArray[i - 1] = sortedArray[i];
+                    sortedArray[i] = temp;
+                    swapped = true;
+                }
+            }
+            n--;
+        } while (swapped);
+
+        return sortedArray;
+    }
+
+    // Метод для перетворення масиву цілих чисел у масив їхніх двійкових представлень у доповненні до двох
+    public static String[] toTwosComplementArray(int[] integers) {
+        String[] twosComplementArray = new String[integers.length];
+        for (int i = 0; i < integers.length; i++) {
+            twosComplementArray[i] = toTwosComplement(integers[i]);
+        }
+        return twosComplementArray;
+    }
+
+    // Метод для конвертації рядка у масив цілих чисел
+    public static int[] convertWordsToIntegers(String[] words) {
+        int[] integers = new int[words.length];
+
+        for (int i = 0; i < words.length; i++) {
+            try {
+                integers[i] = Integer.parseInt(words[i]);
+            } catch (NumberFormatException e) {
+                integers[i] = 0;
+            }
+        }
+
+        return integers;
+    }
+
+    // Метод для перетворення цілого числа у його двійкове представлення у доповненні до двох
+    public static String toTwosComplement(int num) {
+        int maxValue = (int) Math.pow(2, 15) - 1;
+        int minValue = -(int) Math.pow(2, 15);
+
+        if (num > maxValue)
+            num = maxValue;
+        else if (num < minValue)
+            num = maxValue;
+
+        StringBuilder binaryRepresentation = new StringBuilder();
+
+        if (num < 0) { // Обробляємо від'ємне число
+            num = Math.abs(num);
+            while (num > 0) {
+                binaryRepresentation.insert(0, num % 2);
+                num /= 2;
+            }
+
+            while (binaryRepresentation.length() < 16) {
+                binaryRepresentation.insert(0, "0");
+            }
+
+            for (int i = 0; i < binaryRepresentation.length(); i++) {
+                if (binaryRepresentation.charAt(i) == '0') {
+                    binaryRepresentation.setCharAt(i, '1');
+                } else {
+                    binaryRepresentation.setCharAt(i, '0');
+                }
+            }
+
+            int carry = 1;
+            for (int i = binaryRepresentation.length() - 1; i >= 0; i--) {
+                int digit = binaryRepresentation.charAt(i) - '0' + carry;
+                binaryRepresentation.setCharAt(i, (char) ('0' + digit % 2));
+                carry = digit / 2;
+            }
+        } else { // Обробляємо додатне число
+            while (num > 0) {
+                binaryRepresentation.insert(0, num % 2);
+                num /= 2;
+            }
+
+            while (binaryRepresentation.length() < 16) {
+                binaryRepresentation.insert(0, "0");
+            }
+        }
+        return binaryRepresentation.toString();
+    }
+
+    // Метод для порівняння двох рядків, які представляють двійкові числа
+    public static int compareBinaryStrings(String str1, String str2) {
+        int len1 = str1.length();
+        int len2 = str2.length();
+        if (len1 != len2) {
+            return len1 - len2;
+        }
+        return str1.compareTo(str2);
+    }
+}
